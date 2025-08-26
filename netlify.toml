@@ -3,11 +3,15 @@
   node_bundler = "esbuild"
   external_node_modules = ["express","oas3-tools","serverless-http"]
 
-# Config específica para la Function "api"
 [functions.api]
-  included_files = ["api/**", "data/**"]
+  # TODO: incluye todo lo que tu app lee en runtime
+  included_files = [
+    "api/**",
+    "controllers/**",
+    "service/**",
+    "data/**"
+  ]
 
-# Enruta TODO hacia la Function (incluye /docs, /books, etc.)
 [[redirects]]
   from = "/*"
   to = "/.netlify/functions/api/:splat"
