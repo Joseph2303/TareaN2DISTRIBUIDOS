@@ -1,19 +1,21 @@
-// app.js
-"use strict";
-const path = require("path");
-const fs = require("fs");
-const oas3Tools = require("oas3-tools");
+'use strict';
+const path = require('path');
+const http = require('http');
+const oas3Tools = require('oas3-tools');
 
-const ROOT = process.cwd();
-const OAS_PATH = [path.join(ROOT,"api","openapi.yaml"), path.join(__dirname,"..","..","api","openapi.yaml")].find(p=>fs.existsSync(p));
+const serverPort = process.env.PORT || 8080;
 
-const options = { routing: { controllers: path.join(ROOT, "controllers") } };
-const expressAppConfig = oas3Tools.expressAppConfig(OAS_PATH, options);
+const options = { routing: { controllers: path.join(__dirname, './controllers') } };
+
+const expressAppConfig = oas3Tools.expressAppConfig(
+  path.join(__dirname, 'api/openapi.yaml'),
+  options
+);
 const app = expressAppConfig.getApp();
 
-app.get("/health", (_req, res) => res.status(200).json({ ok: true }));
+app.get('/health', (_req, res) => res.status(200).json({ ok: true }));
 
-// 👇 nuevo: manda la raíz a /docs
-app.get("/", (_req, res) => res.redirect("/docs"));
-
-module.exports = app;
+http.createServer(app).listen(serverPort, () => {
+  console.log('Server listening on http://localhost:%d', serverPort);
+  console.log('Swagger UI: http://localhost:%d/docs', serverPort);
+});
