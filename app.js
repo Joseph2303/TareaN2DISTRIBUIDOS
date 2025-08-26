@@ -34,5 +34,6 @@ const expressAppConfig = oas3Tools.expressAppConfig(OAS_PATH, options);
 const app = expressAppConfig.getApp();
 
 app.get("/health", (_req, res) => res.status(200).json({ ok: true, oas: OAS_PATH, controllers: CTRL_DIR }));
+app.get("/", (_req, res) => res.redirect("/docs"));
 
 module.exports = app;
