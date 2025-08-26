@@ -3,11 +3,12 @@
 const path = require("path");
 const oas3Tools = require("oas3-tools");
 
-const options = { routing: { controllers: path.join(__dirname, "./controllers") } };
-const expressAppConfig = oas3Tools.expressAppConfig(
-  path.join(__dirname, "api/openapi.yaml"),
-  options
-);
+// ¡OJO! En Functions, __dirname cambia. Usa la raíz del deploy:
+const ROOT = process.cwd();
+const OAS_PATH = path.join(ROOT, "api", "openapi.yaml");
+
+const options = { routing: { controllers: path.join(ROOT, "controllers") } };
+const expressAppConfig = oas3Tools.expressAppConfig(OAS_PATH, options);
 const app = expressAppConfig.getApp();
 
 app.get("/health", (_req, res) => res.status(200).json({ ok: true }));
