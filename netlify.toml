@@ -4,14 +4,15 @@
   external_node_modules = ["express","oas3-tools","serverless-http"]
 
 [functions.api]
-  # TODO: incluye todo lo que tu app lee en runtime
-  included_files = [
-    "api/**",
-    "controllers/**",
-    "service/**",
-    "data/**"
-  ]
+  included_files = ["api/**", "controllers/**", "service/**", "data/**"]
 
+# 👇 especial para la raíz
+[[redirects]]
+  from = "/"
+  to = "/.netlify/functions/api/docs"
+  status = 200
+
+# catch-all para todo lo demás
 [[redirects]]
   from = "/*"
   to = "/.netlify/functions/api/:splat"
