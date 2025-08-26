@@ -1,0 +1,218 @@
+openapi: 3.0.0
+info:
+  title: TareaN2DISTRIBUIDOS - Library API
+  description: API-first con Books, Authors y Publishers (relaciones por ID).
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+
+paths:
+  /books:
+    get:
+      x-swagger-router-controller: Default
+      operationId: listBooks
+      summary: Listar libros
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Book' }
+    post:
+      x-swagger-router-controller: Default
+      operationId: createBook
+      summary: Crear libro
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Book' }
+      responses:
+        "201":
+          description: Creado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Book' }
+        "400": { description: Error de validación }
+        "409": { description: ID duplicado }
+
+  /books/{bookId}:
+    get:
+      x-swagger-router-controller: Default
+      operationId: getBook
+      summary: Obtener libro por id
+      parameters:
+        - in: path
+          name: bookId
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Book' }
+        "404": { description: No encontrado }
+    put:
+      x-swagger-router-controller: Default
+      operationId: updateBook
+      summary: Actualizar libro por id
+      parameters:
+        - in: path
+          name: bookId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Book' }
+      responses:
+        "200":
+          description: Actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Book' }
+        "404": { description: No encontrado }
+        "400": { description: Error de validación }
+    delete:
+      x-swagger-router-controller: Default
+      operationId: deleteBook
+      summary: Borrar libro por id
+      parameters:
+        - in: path
+          name: bookId
+          required: true
+          schema: { type: string }
+      responses:
+        "204": { description: Borrado }
+        "404": { description: No encontrado }
+
+  /authors:
+    get:
+      x-swagger-router-controller: Default
+      operationId: listAuthors
+      summary: Listar autores
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Author' }
+    post:
+      x-swagger-router-controller: Default
+      operationId: createAuthor
+      summary: Crear autor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Author' }
+      responses:
+        "201":
+          description: Creado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Author' }
+        "409": { description: ID duplicado }
+
+  /authors/{authorId}:
+    get:
+      x-swagger-router-controller: Default
+      operationId: getAuthor
+      summary: Obtener autor por id
+      parameters:
+        - in: path
+          name: authorId
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Author' }
+        "404": { description: No encontrado }
+    put:
+      x-swagger-router-controller: Default
+      operationId: updateAuthor
+      summary: Actualizar autor por id
+      parameters:
+        - in: path
+          name: authorId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Author' }
+      responses:
+        "200":
+          description: Actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Author' }
+        "404": { description: No encontrado }
+    delete:
+      x-swagger-router-controller: Default
+      operationId: deleteAuthor
+      summary: Borrar autor por id
+      parameters:
+        - in: path
+          name: authorId
+          required: true
+          schema: { type: string }
+      responses:
+        "204": { description: Borrado }
+        "404": { description: No encontrado }
+        "409": { description: Conflicto (tiene libros asociados) }
+
+  /publishers:
+    get:
+      x-swagger-router-controller: Default
+      operationId: listPublishers
+      summary: Listar editoriales
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Publisher' }
+    post:
+      x-swagger-router-controller: Default
+      operationId: createPublisher
+      summary: Crear editorial
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Publisher' }
+      responses:
+        "201":
+          description: Creado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Publisher' }
+        "409": { description: ID duplicado }
+
+  /publishers/{publisherId}:
+    get:
+      x-swagger-router-controller: Default
+      operationId: getPublisher
+      summary: Obtener editorial por id
+      parameters:
+        - in: path
+          name: publisherId
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:

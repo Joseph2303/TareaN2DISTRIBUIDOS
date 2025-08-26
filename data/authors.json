@@ -1,0 +1,12 @@
+[
+  {
+    "id": "a1",
+    "name": "Abraham Silberschatz",
+    "country": "USA"
+  },
+  {
+    "id": "a2",
+    "name": "Haruki Murakami",
+    "country": "Japan"
+  }
+]

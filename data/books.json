@@ -1,0 +1,22 @@
+[
+  {
+    "id": "b1",
+    "title": "Operating System Concepts",
+    "edition": "9th",
+    "copyright": 2012,
+    "language": "ENGLISH",
+    "pages": 976,
+    "authorId": "a1",
+    "publisherId": "p1"
+  },
+  {
+    "id": "b2",
+    "title": "Kafka on the Shore",
+    "edition": "1st",
+    "copyright": 2002,
+    "language": "ENGLISH",
+    "pages": 505,
+    "authorId": "a2",
+    "publisherId": "p2"
+  }
+]
