@@ -3,7 +3,12 @@
   node_bundler = "esbuild"
   external_node_modules = ["express","oas3-tools","serverless-http"]
 
-# Incluye archivos no-JS dentro del bundle de la Function "api"
-[[functions]]
-  name = "api"
-  included_files = ["api/openapi.yaml", "data/**"]
+# Config específica para la Function "api"
+[functions.api]
+  included_files = ["api/**", "data/**"]
+
+# Enruta TODO hacia la Function (incluye /docs, /books, etc.)
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
