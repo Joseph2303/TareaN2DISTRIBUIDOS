@@ -2,162 +2,109 @@
 const fs = require('fs');
 const path = require('path');
 
-const IS_NETLIFY = !!process.env.NETLIFY;
+const ROOT = process.cwd();
+const PKG_DATA_DIR = path.join(ROOT, 'data');     // empaquetado con el deploy (solo lectura en Netlify)
 
-// Carpeta de datos (usa la raíz del deploy para Functions)
-const dataDir = process.env.DATA_DIR || path.join(process.cwd(), 'data');
-fs.mkdirSync(dataDir, { recursive: true });
+// 1) Elegimos un directorio de runtime para ESCRIBIR.
+//    Intentamos usar DATA_DIR o data/; si no es escribible, caemos a /tmp/data.
+function pickRuntimeDir() {
+  const preferred = process.env.DATA_DIR || PKG_DATA_DIR;
+  try {
+    fs.mkdirSync(preferred, { recursive: true });
+    fs.accessSync(preferred, fs.constants.W_OK);
+    return preferred; // es escribible
+  } catch {
+    const tmpDir = path.join('/tmp', 'data');
+    fs.mkdirSync(tmpDir, { recursive: true });
+    return tmpDir; // Netlify Functions: escribible
+  }
+}
+
+const RUNTIME_DATA_DIR = pickRuntimeDir();
 
 const files = {
-  books: path.join(dataDir, 'books.json'),
-  authors: path.join(dataDir, 'authors.json'),
-  publishers: path.join(dataDir, 'publishers.json'),
+  books: path.join(RUNTIME_DATA_DIR, 'books.json'),
+  authors: path.join(RUNTIME_DATA_DIR, 'authors.json'),
+  publishers: path.join(RUNTIME_DATA_DIR, 'publishers.json'),
+};
+const pkgFiles = {
+  books: path.join(PKG_DATA_DIR, 'books.json'),
+  authors: path.join(PKG_DATA_DIR, 'authors.json'),
+  publishers: path.join(PKG_DATA_DIR, 'publishers.json'),
 };
 
 let books = [];
 let authors = [];
 let publishers = [];
 
+// Semillas por defecto (por si no existen ni en runtime ni en pkg)
+const SEED = {
+  authors: [
+    { id: 'a1', name: 'Abraham Silberschatz', country: 'USA' },
+    { id: 'a2', name: 'Haruki Murakami', country: 'Japan' },
+  ],
+  publishers: [
+    { id: 'p1', name: 'John Wiley & Sons' },
+    { id: 'p2', name: 'Vintage' },
+  ],
+  books: [
+    {
+      id: 'b1', title: 'Operating System Concepts', edition: '9th', copyright: 2012,
+      language: 'ENGLISH', pages: 976, authorId: 'a1', publisherId: 'p1'
+    },
+    {
+      id: 'b2', title: 'Kafka on the Shore', edition: '1st', copyright: 2002,
+      language: 'ENGLISH', pages: 505, authorId: 'a2', publisherId: 'p2'
+    },
+  ],
+};
+
 /**
- * Crea/lee datos según entorno.
- * - En Netlify: NO escribe. Si los archivos existen, los lee; si no, usa defaults en memoria.
- * - Local/otros: crea archivos con semilla si no existen.
+ * Asegura que existan datos en el directorio de runtime:
+ * - Si ya existen en runtime → leer.
+ * - Si no existen pero existen en pkg (bundle) → copiar pkg → runtime.
+ * - Si no existen en ningún lado → crear desde SEED en runtime.
  */
 function ensureFiles() {
-  if (IS_NETLIFY) {
-    // SOLO LECTURA en Functions
-    authors = fs.existsSync(files.authors)
-      ? JSON.parse(fs.readFileSync(files.authors, 'utf8'))
-      : [
-          { id: 'a1', name: 'Abraham Silberschatz', country: 'USA' },
-          { id: 'a2', name: 'Haruki Murakami', country: 'Japan' },
-        ];
-    publishers = fs.existsSync(files.publishers)
-      ? JSON.parse(fs.readFileSync(files.publishers, 'utf8'))
-      : [
-          { id: 'p1', name: 'John Wiley & Sons' },
-          { id: 'p2', name: 'Vintage' },
-        ];
-    books = fs.existsSync(files.books)
-      ? JSON.parse(fs.readFileSync(files.books, 'utf8'))
-      : [
-          {
-            id: 'b1',
-            title: 'Operating System Concepts',
-            edition: '9th',
-            copyright: 2012,
-            language: 'ENGLISH',
-            pages: 976,
-            authorId: 'a1',
-            publisherId: 'p1',
-          },
-          {
-            id: 'b2',
-            title: 'Kafka on the Shore',
-            edition: '1st',
-            copyright: 2002,
-            language: 'ENGLISH',
-            pages: 505,
-            authorId: 'a2',
-            publisherId: 'p2',
-          },
-        ];
-    return; // No intentamos escribir nada en Netlify
-  }
+  const hydrate = (name) => {
+    const runtimePath = files[name];
+    const pkgPath = pkgFiles[name];
 
-  // Local/otros: crear archivos con semilla si no existen
-  if (!fs.existsSync(files.authors)) {
-    fs.writeFileSync(
-      files.authors,
-      JSON.stringify(
-        [
-          { id: 'a1', name: 'Abraham Silberschatz', country: 'USA' },
-          { id: 'a2', name: 'Haruki Murakami', country: 'Japan' },
-        ],
-        null,
-        2
-      )
-    );
-  }
-  if (!fs.existsSync(files.publishers)) {
-    fs.writeFileSync(
-      files.publishers,
-      JSON.stringify(
-        [
-          { id: 'p1', name: 'John Wiley & Sons' },
-          { id: 'p2', name: 'Vintage' },
-        ],
-        null,
-        2
-      )
-    );
-  }
-  if (!fs.existsSync(files.books)) {
-    fs.writeFileSync(
-      files.books,
-      JSON.stringify(
-        [
-          {
-            id: 'b1',
-            title: 'Operating System Concepts',
-            edition: '9th',
-            copyright: 2012,
-            language: 'ENGLISH',
-            pages: 976,
-            authorId: 'a1',
-            publisherId: 'p1',
-          },
-          {
-            id: 'b2',
-            title: 'Kafka on the Shore',
-            edition: '1st',
-            copyright: 2002,
-            language: 'ENGLISH',
-            pages: 505,
-            authorId: 'a2',
-            publisherId: 'p2',
-          },
-        ],
-        null,
-        2
-      )
-    );
-  }
+    if (fs.existsSync(runtimePath)) {
+      return JSON.parse(fs.readFileSync(runtimePath, 'utf8'));
+    }
+    if (fs.existsSync(pkgPath)) {
+      const data = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+      fs.writeFileSync(runtimePath, JSON.stringify(data, null, 2)); // runtime es escribible
+      return data;
+    }
+    fs.writeFileSync(runtimePath, JSON.stringify(SEED[name], null, 2));
+    return SEED[name];
+  };
+
+  authors = hydrate('authors');
+  publishers = hydrate('publishers');
+  books = hydrate('books');
 }
 
-/** Carga arrays desde disco si existen (en Netlify, ensureFiles ya cargó en memoria si faltaba algo). */
 function loadAll() {
   ensureFiles();
-  if (fs.existsSync(files.books)) {
-    books = JSON.parse(fs.readFileSync(files.books, 'utf8'));
-  }
-  if (fs.existsSync(files.authors)) {
-    authors = JSON.parse(fs.readFileSync(files.authors, 'utf8'));
-  }
-  if (fs.existsSync(files.publishers)) {
-    publishers = JSON.parse(fs.readFileSync(files.publishers, 'utf8'));
-  }
+  // Después de asegurar, lee desde runtime (siempre)
+  books = JSON.parse(fs.readFileSync(files.books, 'utf8'));
+  authors = JSON.parse(fs.readFileSync(files.authors, 'utf8'));
+  publishers = JSON.parse(fs.readFileSync(files.publishers, 'utf8'));
 }
 
-/** Guardado seguro (no escribe en Netlify Functions). */
+// Guardado SIEMPRE en el directorio runtime (local: data/, Netlify: /tmp/data)
 function save(type) {
-  if (IS_NETLIFY) return; // las Functions no garantizan escritura
   const map = { books, authors, publishers };
   fs.writeFileSync(files[type], JSON.stringify(map[type], null, 2));
 }
 
-function norm(v) {
-  return String(v ?? '').trim().toLowerCase();
-}
-function idOfBook(b) {
-  return b?.id ?? b?.bookId;
-}
-function idOfAuthor(a) {
-  return a?.id ?? a?.authorId;
-}
-function idOfPublisher(p) {
-  return p?.id ?? p?.publisherId;
-}
+function norm(v) { return String(v ?? '').trim().toLowerCase(); }
+function idOfBook(b) { return b?.id ?? b?.bookId; }
+function idOfAuthor(a) { return a?.id ?? a?.authorId; }
+function idOfPublisher(p) { return p?.id ?? p?.publisherId; }
 
 loadAll();
 
@@ -165,47 +112,33 @@ loadAll();
  * BOOKS
  * =======================*/
 
-// GET /books (con filtros/orden/paginación)
 exports.listBooks = async (params = {}) => {
-  loadAll(); // refresca siempre
-  const {
-    language,
-    authorId,
-    publisherId,
-    title,
-    q,
-    sort = 'title', // title | -title | copyright | -copyright | pages | -pages
-    limit = 50,
-    offset = 0,
-  } = params;
+  loadAll();
+  const { language, authorId, publisherId, title, q, sort = 'title', limit = 50, offset = 0 } = params;
 
   let result = [...books];
 
-  // Filtros
-  if (language) result = result.filter((b) => norm(b.language) === norm(language));
-  if (authorId) result = result.filter((b) => norm(b.authorId) === norm(authorId));
-  if (publisherId) result = result.filter((b) => norm(b.publisherId) === norm(publisherId));
+  if (language)    result = result.filter(b => norm(b.language) === norm(language));
+  if (authorId)    result = result.filter(b => norm(b.authorId) === norm(authorId));
+  if (publisherId) result = result.filter(b => norm(b.publisherId) === norm(publisherId));
   if (title) {
-    const needle = norm(title);
-    result = result.filter((b) => norm(b.title).includes(needle));
+    const n = norm(title);
+    result = result.filter(b => norm(b.title).includes(n));
   }
   if (q) {
-    const needle = norm(q);
-    result = result.filter((b) => {
-      const hay = [b.title, b.language, b.authorId, b.publisherId].map(norm).join(' ');
-      return hay.includes(needle);
-    });
+    const n = norm(q);
+    result = result.filter(b =>
+      [b.title, b.language, b.authorId, b.publisherId].map(norm).join(' ').includes(n)
+    );
   }
 
-  // Orden
   if (sort) {
     const desc = String(sort).startsWith('-');
     const field = desc ? String(sort).slice(1) : String(sort);
     const valid = ['title', 'copyright', 'pages'];
     if (valid.includes(field)) {
       result.sort((a, b) => {
-        const va = a[field];
-        const vb = b[field];
+        const va = a[field], vb = b[field];
         if (va == null && vb == null) return 0;
         if (va == null) return desc ? 1 : -1;
         if (vb == null) return desc ? -1 : 1;
@@ -215,71 +148,46 @@ exports.listBooks = async (params = {}) => {
     }
   }
 
-  // Paginación
   const lim = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 100);
   const off = Math.max(parseInt(offset, 10) || 0, 0);
   return result.slice(off, off + lim);
 };
 
-// POST /books
 exports.createBook = async (body) => {
   loadAll();
   if (!body || !body.id) throw { status: 400, message: "Book debe incluir 'id'." };
-  if (books.some((b) => norm(idOfBook(b)) === norm(body.id)))
-    throw { status: 409, message: 'Book id duplicado.' };
-  if (body.authorId && !authors.some((a) => norm(idOfAuthor(a)) === norm(body.authorId)))
-    throw { status: 400, message: 'authorId no existe.' };
-  if (body.publisherId && !publishers.some((p) => norm(idOfPublisher(p)) === norm(body.publisherId)))
-    throw { status: 400, message: 'publisherId no existe.' };
+  if (books.some(b => norm(idOfBook(b)) === norm(body.id))) throw { status: 409, message: 'Book id duplicado.' };
+  if (body.authorId && !authors.some(a => norm(idOfAuthor(a)) === norm(body.authorId))) throw { status: 400, message: 'authorId no existe.' };
+  if (body.publisherId && !publishers.some(p => norm(idOfPublisher(p)) === norm(body.publisherId))) throw { status: 400, message: 'publisherId no existe.' };
   books.push(body);
-  save('books');
+  save('books');      // ✅ en Netlify escribe a /tmp/data/books.json
   return body;
 };
 
-// GET /books/{bookId} — lectura directa + logs
 exports.getBook = async (bookId) => {
   if (bookId == null) return null;
-  try {
-    const pathBooks = files.books;
-    const disk = fs.existsSync(pathBooks)
-      ? JSON.parse(fs.readFileSync(pathBooks, 'utf8'))
-      : books; // en Netlify puede venir precargado en memoria
-    const needle = norm(bookId);
-    const book = disk.find((b) => norm(idOfBook(b)) === needle);
-    console.log('[getBook]', {
-      pathBooks,
-      bookId,
-      count: Array.isArray(disk) ? disk.length : 0,
-      found: !!book,
-      ids: Array.isArray(disk) ? disk.map((x) => idOfBook(x)) : [],
-    });
-    return book || null;
-  } catch (e) {
-    console.error('[getBook][error]', e);
-    throw { status: 500, message: 'Error leyendo books.json' };
-  }
+  loadAll();
+  const n = norm(bookId);
+  const book = books.find(b => norm(idOfBook(b)) === n);
+  return book || null;
 };
 
-// PUT /books/{bookId}
 exports.updateBook = async (bookId, body) => {
   loadAll();
-  const idx = books.findIndex((i) => norm(i.id) === norm(bookId));
+  const idx = books.findIndex(i => norm(i.id) === norm(bookId));
   if (idx === -1) return null;
-  if (body.authorId && !authors.some((a) => norm(idOfAuthor(a)) === norm(body.authorId)))
-    throw { status: 400, message: 'authorId no existe.' };
-  if (body.publisherId && !publishers.some((p) => norm(idOfPublisher(p)) === norm(body.publisherId)))
-    throw { status: 400, message: 'publisherId no existe.' };
+  if (body.authorId && !authors.some(a => norm(idOfAuthor(a)) === norm(body.authorId))) throw { status: 400, message: 'authorId no existe.' };
+  if (body.publisherId && !publishers.some(p => norm(idOfPublisher(p)) === norm(body.publisherId))) throw { status: 400, message: 'publisherId no existe.' };
   body.id = String(bookId);
   books[idx] = body;
   save('books');
   return body;
 };
 
-// DELETE /books/{bookId}
 exports.deleteBook = async (bookId) => {
   loadAll();
   const before = books.length;
-  books = books.filter((i) => norm(i.id) !== norm(bookId));
+  books = books.filter(i => norm(i.id) !== norm(bookId));
   if (books.length === before) return false;
   save('books');
   return true;
@@ -294,11 +202,11 @@ exports.listAuthors = async (params = {}) => {
   const { name, country, q, sort = 'name', limit = 50, offset = 0 } = params;
 
   let result = [...authors];
-  if (name) result = result.filter((a) => norm(a.name).includes(norm(name)));
-  if (country) result = result.filter((a) => norm(a.country).includes(norm(country)));
+  if (name)    result = result.filter(a => norm(a.name).includes(norm(name)));
+  if (country) result = result.filter(a => norm(a.country).includes(norm(country)));
   if (q) {
-    const needle = norm(q);
-    result = result.filter((a) => [a.name, a.country].map(norm).join(' ').includes(needle));
+    const n = norm(q);
+    result = result.filter(a => [a.name, a.country].map(norm).join(' ').includes(n));
   }
 
   if (sort) {
@@ -306,11 +214,10 @@ exports.listAuthors = async (params = {}) => {
     const field = desc ? String(sort).slice(1) : String(sort);
     const valid = ['name', 'country'];
     if (valid.includes(field)) {
-      result.sort((a, b) => {
-        const va = a[field] ?? '';
-        const vb = b[field] ?? '';
-        return desc ? String(vb).localeCompare(String(va)) : String(va).localeCompare(String(vb));
-      });
+      result.sort((a, b) =>
+        desc ? String(b[field] ?? '').localeCompare(String(a[field] ?? ''))
+             : String(a[field] ?? '').localeCompare(String(b[field] ?? ''))
+      );
     }
   }
 
@@ -322,39 +229,33 @@ exports.listAuthors = async (params = {}) => {
 exports.createAuthor = async (body) => {
   loadAll();
   if (!body || !body.id) throw { status: 400, message: "Author debe incluir 'id'." };
-  if (authors.some((a) => norm(idOfAuthor(a)) === norm(body.id)))
-    throw { status: 409, message: 'Author id duplicado.' };
-  authors.push(body);
-  save('authors');
-  return body;
+  if (authors.some(a => norm(idOfAuthor(a)) === norm(body.id))) throw { status: 409, message: 'Author id duplicado.' };
+  authors.push(body); save('authors'); return body;
 };
 
 exports.getAuthor = async (authorId) => {
   if (authorId == null) return null;
   loadAll();
-  const a = authors.find((x) => norm(idOfAuthor(x)) === norm(authorId));
+  const a = authors.find(x => norm(idOfAuthor(x)) === norm(authorId));
   return a || null;
 };
 
 exports.updateAuthor = async (authorId, body) => {
   loadAll();
-  const idx = authors.findIndex((i) => norm(i.id) === norm(authorId));
+  const idx = authors.findIndex(i => norm(i.id) === norm(authorId));
   if (idx === -1) return null;
   body.id = String(authorId);
-  authors[idx] = body;
-  save('authors');
-  return body;
+  authors[idx] = body; save('authors'); return body;
 };
 
 exports.deleteAuthor = async (authorId) => {
   loadAll();
-  const related = books.some((b) => norm(b.authorId) === norm(authorId));
+  const related = books.some(b => norm(b.authorId) === norm(authorId));
   if (related) throw { status: 409, message: 'No se puede borrar: tiene libros asociados.' };
   const before = authors.length;
-  authors = authors.filter((i) => norm(i.id) !== norm(authorId));
+  authors = authors.filter(i => norm(i.id) !== norm(authorId));
   if (authors.length === before) return false;
-  save('authors');
-  return true;
+  save('authors'); return true;
 };
 
 /* =========================
@@ -366,21 +267,17 @@ exports.listPublishers = async (params = {}) => {
   const { name, q, sort = 'name', limit = 50, offset = 0 } = params;
 
   let result = [...publishers];
-  if (name) result = result.filter((p) => norm(p.name).includes(norm(name)));
-  if (q) {
-    const needle = norm(q);
-    result = result.filter((p) => norm(p.name).includes(needle));
-  }
+  if (name) result = result.filter(p => norm(p.name).includes(norm(name)));
+  if (q) { const n = norm(q); result = result.filter(p => norm(p.name).includes(n)); }
 
   if (sort) {
     const desc = String(sort).startsWith('-');
     const field = desc ? String(sort).slice(1) : String(sort);
     if (['name'].includes(field)) {
-      result.sort((a, b) => {
-        const va = a[field] ?? '';
-        const vb = b[field] ?? '';
-        return desc ? String(vb).localeCompare(String(va)) : String(va).localeCompare(String(vb));
-      });
+      result.sort((a, b) =>
+        desc ? String(b[field] ?? '').localeCompare(String(a[field] ?? ''))
+             : String(a[field] ?? '').localeCompare(String(b[field] ?? ''))
+      );
     }
   }
 
@@ -392,37 +289,31 @@ exports.listPublishers = async (params = {}) => {
 exports.createPublisher = async (body) => {
   loadAll();
   if (!body || !body.id) throw { status: 400, message: "Publisher debe incluir 'id'." };
-  if (publishers.some((p) => norm(idOfPublisher(p)) === norm(body.id)))
-    throw { status: 409, message: 'Publisher id duplicado.' };
-  publishers.push(body);
-  save('publishers');
-  return body;
+  if (publishers.some(p => norm(idOfPublisher(p)) === norm(body.id))) throw { status: 409, message: 'Publisher id duplicado.' };
+  publishers.push(body); save('publishers'); return body;
 };
 
 exports.getPublisher = async (publisherId) => {
   if (publisherId == null) return null;
   loadAll();
-  const p = publishers.find((x) => norm(idOfPublisher(x)) === norm(publisherId));
+  const p = publishers.find(x => norm(idOfPublisher(x)) === norm(publisherId));
   return p || null;
 };
 
 exports.updatePublisher = async (publisherId, body) => {
   loadAll();
-  const idx = publishers.findIndex((i) => norm(i.id) === norm(publisherId));
+  const idx = publishers.findIndex(i => norm(i.id) === norm(publisherId));
   if (idx === -1) return null;
   body.id = String(publisherId);
-  publishers[idx] = body;
-  save('publishers');
-  return body;
+  publishers[idx] = body; save('publishers'); return body;
 };
 
 exports.deletePublisher = async (publisherId) => {
   loadAll();
-  const related = books.some((b) => norm(b.publisherId) === norm(publisherId));
+  const related = books.some(b => norm(b.publisherId) === norm(publisherId));
   if (related) throw { status: 409, message: 'No se puede borrar: tiene libros asociados.' };
   const before = publishers.length;
-  publishers = publishers.filter((i) => norm(i.id) !== norm(publisherId));
+  publishers = publishers.filter(i => norm(i.id) !== norm(publisherId));
   if (publishers.length === before) return false;
-  save('publishers');
-  return true;
+  save('publishers'); return true;
 };
