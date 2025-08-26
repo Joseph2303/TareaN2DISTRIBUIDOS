@@ -2,6 +2,21 @@
 const fs = require('fs');
 const path = require('path');
 
+const IS_NETLIFY = !!process.env.NETLIFY;
+
+// dentro de ensureFiles():
+if (IS_NETLIFY) {
+  // Solo lee si existen; si no existen, usa defaults en memoria (no escribas al disco)
+  authors = fs.existsSync(files.authors) ? JSON.parse(fs.readFileSync(files.authors, "utf8")) :
+    [{ id:"a1", name:"Abraham Silberschatz", country:"USA" },{ id:"a2", name:"Haruki Murakami", country:"Japan" }];
+  publishers = fs.existsSync(files.publishers) ? JSON.parse(fs.readFileSync(files.publishers, "utf8")) :
+    [{ id:"p1", name:"John Wiley & Sons" },{ id:"p2", name:"Vintage" }];
+  books = fs.existsSync(files.books) ? JSON.parse(fs.readFileSync(files.books, "utf8")) :
+    [{ id:"b1", title:"Operating System Concepts", edition:"9th", copyright:2012, language:"ENGLISH", pages:976, authorId:"a1", publisherId:"p1" },
+     { id:"b2", title:"Kafka on the Shore", edition:"1st", copyright:2002, language:"ENGLISH", pages:505, authorId:"a2", publisherId:"p2" }];
+  return; // ¡no intentes fs.writeFileSync en Netlify!
+}
+
 // Permite sobreescribir la carpeta de datos en producción (Render, etc.)
 const dataDir = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 fs.mkdirSync(dataDir, { recursive: true });
