@@ -33,7 +33,9 @@ const options = { routing: { controllers: CTRL_DIR } };
 const expressAppConfig = oas3Tools.expressAppConfig(OAS_PATH, options);
 const app = expressAppConfig.getApp();
 
-app.get("/health", (_req, res) => res.status(200).json({ ok: true, oas: OAS_PATH, controllers: CTRL_DIR }));
+// log para ver qué URL llega a la Function
+app.use((req, _res, next) => { console.log("[HIT]", req.method, req.url); next(); });
+// raíz -> /docs (si alguien entra a "/")
 app.get("/", (_req, res) => res.redirect("/docs"));
 
 module.exports = app;

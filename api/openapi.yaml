@@ -4,7 +4,8 @@ info:
   description: API-first con Books, Authors y Publishers (relaciones por ID).
   version: 1.0.0
 servers:
-  - url: https://aesthetic-manatee-254d43.netlify.app/.netlify/functions/api
+  - url: https://aesthetic-manatee-254d43.netlify.app/docs/
+    description: Netlify (producción)
   - url: http://localhost:8080
 
 paths:
