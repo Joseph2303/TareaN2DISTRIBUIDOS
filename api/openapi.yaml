@@ -11,7 +11,57 @@ paths:
     get:
       x-swagger-router-controller: Default
       operationId: listBooks
-      summary: Listar libros
+      summary: Listar libros (con filtros, orden y paginación)
+      parameters:
+        - name: authorId
+          in: query
+          description: Filtrar por autor (ID)
+          required: false
+          schema:
+            type: string
+        - name: publisherId
+          in: query
+          description: Filtrar por editorial (ID)
+          required: false
+          schema:
+            type: string
+        - name: title
+          in: query
+          description: Coincidencia parcial en el título (case-insensitive)
+          required: false
+          schema:
+            type: string
+        - name: q
+          in: query
+          description: Búsqueda simple en título/idioma/authorId/publisherId
+          required: false
+          schema:
+            type: string
+        - name: sort
+          in: query
+          description: Campo de orden (usa prefijo '-' para descendente)
+          required: false
+          schema:
+            type: string
+            enum: [title, -title, copyright, -copyright, pages, -pages]
+            default: title
+        - name: limit
+          in: query
+          description: Tamaño de página
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          description: Desplazamiento (0-based)
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
       responses:
         "200":
           description: OK
@@ -19,7 +69,8 @@ paths:
             application/json:
               schema:
                 type: array
-                items: { $ref: '#/components/schemas/Book' }
+                items:
+                  $ref: '#/components/schemas/Book'
     post:
       x-swagger-router-controller: Default
       operationId: createBook
@@ -28,15 +79,19 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/Book' }
+            schema:
+              $ref: '#/components/schemas/Book'
       responses:
         "201":
           description: Creado
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Book' }
-        "400": { description: Error de validación }
-        "409": { description: ID duplicado }
+              schema:
+                $ref: '#/components/schemas/Book'
+        "400":
+          description: Error de validación
+        "409":
+          description: ID duplicado
 
   /books/{bookId}:
     get:
@@ -47,14 +102,17 @@ paths:
         - in: path
           name: bookId
           required: true
-          schema: { type: string }
+          schema:
+            type: string
       responses:
         "200":
           description: OK
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Book' }
-        "404": { description: No encontrado }
+              schema:
+                $ref: '#/components/schemas/Book'
+        "404":
+          description: No encontrado
     put:
       x-swagger-router-controller: Default
       operationId: updateBook
@@ -63,20 +121,25 @@ paths:
         - in: path
           name: bookId
           required: true
-          schema: { type: string }
+          schema:
+            type: string
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/Book' }
+            schema:
+              $ref: '#/components/schemas/Book'
       responses:
         "200":
           description: Actualizado
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Book' }
-        "404": { description: No encontrado }
-        "400": { description: Error de validación }
+              schema:
+                $ref: '#/components/schemas/Book'
+        "404":
+          description: No encontrado
+        "400":
+          description: Error de validación
     delete:
       x-swagger-router-controller: Default
       operationId: deleteBook
@@ -85,16 +148,61 @@ paths:
         - in: path
           name: bookId
           required: true
-          schema: { type: string }
+          schema:
+            type: string
       responses:
-        "204": { description: Borrado }
-        "404": { description: No encontrado }
+        "204":
+          description: Borrado
+        "404":
+          description: No encontrado
 
   /authors:
     get:
       x-swagger-router-controller: Default
       operationId: listAuthors
-      summary: Listar autores
+      summary: Listar autores (con filtros, orden y paginación)
+      parameters:
+        - name: name
+          in: query
+          description: Coincidencia parcial de nombre (case-insensitive)
+          required: false
+          schema:
+            type: string
+        - name: country
+          in: query
+          description: Coincidencia parcial de país (case-insensitive)
+          required: false
+          schema:
+            type: string
+        - name: q
+          in: query
+          description: Búsqueda simple en nombre/país
+          required: false
+          schema:
+            type: string
+        - name: sort
+          in: query
+          description: Campo de orden
+          required: false
+          schema:
+            type: string
+            enum: [name, -name, country, -country]
+            default: name
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
       responses:
         "200":
           description: OK
@@ -102,7 +210,8 @@ paths:
             application/json:
               schema:
                 type: array
-                items: { $ref: '#/components/schemas/Author' }
+                items:
+                  $ref: '#/components/schemas/Author'
     post:
       x-swagger-router-controller: Default
       operationId: createAuthor
@@ -111,14 +220,17 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/Author' }
+            schema:
+              $ref: '#/components/schemas/Author'
       responses:
         "201":
           description: Creado
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Author' }
-        "409": { description: ID duplicado }
+              schema:
+                $ref: '#/components/schemas/Author'
+        "409":
+          description: ID duplicado
 
   /authors/{authorId}:
     get:
@@ -129,14 +241,17 @@ paths:
         - in: path
           name: authorId
           required: true
-          schema: { type: string }
+          schema:
+            type: string
       responses:
         "200":
           description: OK
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Author' }
-        "404": { description: No encontrado }
+              schema:
+                $ref: '#/components/schemas/Author'
+        "404":
+          description: No encontrado
     put:
       x-swagger-router-controller: Default
       operationId: updateAuthor
@@ -145,19 +260,23 @@ paths:
         - in: path
           name: authorId
           required: true
-          schema: { type: string }
+          schema:
+            type: string
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/Author' }
+            schema:
+              $ref: '#/components/schemas/Author'
       responses:
         "200":
           description: Actualizado
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Author' }
-        "404": { description: No encontrado }
+              schema:
+                $ref: '#/components/schemas/Author'
+        "404":
+          description: No encontrado
     delete:
       x-swagger-router-controller: Default
       operationId: deleteAuthor
@@ -166,17 +285,57 @@ paths:
         - in: path
           name: authorId
           required: true
-          schema: { type: string }
+          schema:
+            type: string
       responses:
-        "204": { description: Borrado }
-        "404": { description: No encontrado }
-        "409": { description: Conflicto (tiene libros asociados) }
+        "204":
+          description: Borrado
+        "404":
+          description: No encontrado
+        "409":
+          description: Conflicto (tiene libros asociados)
 
   /publishers:
     get:
       x-swagger-router-controller: Default
       operationId: listPublishers
-      summary: Listar editoriales
+      summary: Listar editoriales (con filtros, orden y paginación)
+      parameters:
+        - name: name
+          in: query
+          description: Coincidencia parcial de nombre (case-insensitive)
+          required: false
+          schema:
+            type: string
+        - name: q
+          in: query
+          description: Búsqueda simple en nombre
+          required: false
+          schema:
+            type: string
+        - name: sort
+          in: query
+          description: Campo de orden
+          required: false
+          schema:
+            type: string
+            enum: [name, -name]
+            default: name
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
       responses:
         "200":
           description: OK
@@ -184,7 +343,8 @@ paths:
             application/json:
               schema:
                 type: array
-                items: { $ref: '#/components/schemas/Publisher' }
+                items:
+                  $ref: '#/components/schemas/Publisher'
     post:
       x-swagger-router-controller: Default
       operationId: createPublisher
@@ -193,14 +353,17 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/Publisher' }
+            schema:
+              $ref: '#/components/schemas/Publisher'
       responses:
         "201":
           description: Creado
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Publisher' }
-        "409": { description: ID duplicado }
+              schema:
+                $ref: '#/components/schemas/Publisher'
+        "409":
+          description: ID duplicado
 
   /publishers/{publisherId}:
     get:
@@ -211,8 +374,115 @@ paths:
         - in: path
           name: publisherId
           required: true
-          schema: { type: string }
+          schema:
+            type: string
       responses:
         "200":
           description: OK
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Publisher'
+        "404":
+          description: No encontrado
+    put:
+      x-swagger-router-controller: Default
+      operationId: updatePublisher
+      summary: Actualizar editorial por id
+      parameters:
+        - in: path
+          name: publisherId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Publisher'
+      responses:
+        "200":
+          description: Actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Publisher'
+        "404":
+          description: No encontrado
+    delete:
+      x-swagger-router-controller: Default
+      operationId: deletePublisher
+      summary: Borrar editorial por id
+      parameters:
+        - in: path
+          name: publisherId
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Borrado
+        "404":
+          description: No encontrado
+        "409":
+          description: Conflicto (tiene libros asociados)
+
+components:
+  schemas:
+    Book:
+      type: object
+      required: [id, title]
+      properties:
+        id:
+          type: string
+          example: b1
+        title:
+          type: string
+          example: Operating System Concepts
+        edition:
+          type: string
+          example: 9th
+        copyright:
+          type: integer
+          example: 2012
+        language:
+          $ref: '#/components/schemas/Language'
+        pages:
+          type: integer
+          example: 976
+        authorId:
+          type: string
+          example: a1
+        publisherId:
+          type: string
+          example: p1
+
+    Author:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          example: a1
+        name:
+          type: string
+          example: Abraham Silberschatz
+        country:
+          type: string
+          example: USA
+
+    Publisher:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          example: p1
+        name:
+          type: string
+          example: John Wiley & Sons
+
+    Language:
+      type: string
+      enum: [SPANISH, ENGLISH, FRENCH, GERMAN, ITALIAN, PORTUGUESE]
