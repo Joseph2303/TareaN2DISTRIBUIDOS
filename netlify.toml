@@ -6,13 +6,29 @@
 [functions.api]
   included_files = ["api/**", "controllers/**", "service/**", "data/**"]
 
-# 👇 especial para la raíz
+# rutas explícitas primero
 [[redirects]]
-  from = "/"
+  from = "/health"
+  to = "/.netlify/functions/api/health"
+  status = 200
+
+[[redirects]]
+  from = "/docs"
   to = "/.netlify/functions/api/docs"
   status = 200
 
-# catch-all para todo lo demás
+[[redirects]]
+  from = "/docs/*"
+  to = "/.netlify/functions/api/docs/:splat"
+  status = 200
+
+# raíz → function (la app redirige a /docs)
+[[redirects]]
+  from = "/"
+  to = "/.netlify/functions/api/"
+  status = 200
+
+# catch-all para el resto de la API
 [[redirects]]
   from = "/*"
   to = "/.netlify/functions/api/:splat"
